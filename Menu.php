@@ -12,7 +12,9 @@ class Menu extends \yii\widgets\Menu
 
     public $iconTemplate = '{label} <i class="{icon}"></i>';
 
-    public $submenuItem = [];
+    public $submenuOptions = [];
+
+    public $submenuClass;
 
     protected function renderItem($item)
     {
@@ -20,6 +22,8 @@ class Menu extends \yii\widgets\Menu
         {
             return $item['content'];
         }
+
+        $submenuItems = ArrayHelper::remove($item, '_items');
 
         if (isset($item['url']))
         {
@@ -52,45 +56,69 @@ class Menu extends \yii\widgets\Menu
             ]);
         }
 
-        return parent::renderItem($item);
+        $return = parent::renderItem($item);
+
+        if ($submenuItems)
+        {
+            $submenuTemplate = ArrayHelper::getValue($item, 'submenuTemplate', $this->submenuTemplate);
+          
+            $return .= strtr($submenuTemplate, [
+                '{items}' => $this->renderSubmenu($submenuItems)
+            ]);
+        }
+
+        return $return;
     }
 
     protected function renderItems($items)
     {
         foreach($items as $key => $item)
         {
-            if (!empty($item['items']))
+            if ($this->submenuClass)
             {
-                foreach($item['items'] as $k => $v)
+                $submenuItems = ArrayHelper::remove($items[$key], 'items');
+
+                if ($submenuItems)
                 {
-                    $items[$key]['items'][$k] = array_merge($this->submenuItem, $v);
-                }
+                    $items[$key]['_items'] = $submenuItems;
 
-                $submenuTemplate = ArrayHelper::getValue($item, 'submenuTemplate', $this->submenuTemplate);
+                    $submenuTemplate = ArrayHelper::getValue($item, 'submenuTemplate', $this->submenuTemplate);
 
-                if (strpos($submenuTemplate, '{id}') !== false)
-                {
-                    $id = $this->getId();
-
-                    $submenuTemplate = str_replace('{id}', $id, $submenuTemplate);
-                
-                    $items[$key]['submenuTemplate'] = $submenuTemplate;
-                
-                    $template = ArrayHelper::getValue($item, 'template');
-
-                    if (isset($item['url']))
+                    if (strpos($submenuTemplate, '{id}') !== false)
                     {
-                        $items[$key]['template'] = str_replace('{id}', $id, $this->linkTemplate);
-                    }
-                    else
-                    {
-                        $items[$key]['template'] = str_replace('{id}', $id, $this->labelTemplate);
+                        $id = $this->getId();
+
+                        $submenuTemplate = str_replace('{id}', $id, $submenuTemplate);
+                    
+                        $items[$key]['submenuTemplate'] = $submenuTemplate;
+                    
+                        $template = ArrayHelper::getValue($item, 'template');
+
+                        if (isset($item['url']))
+                        {
+                            $items[$key]['template'] = str_replace('{id}', $id, $this->linkTemplate);
+                        }
+                        else
+                        {
+                            $items[$key]['template'] = str_replace('{id}', $id, $this->labelTemplate);
+                        }
                     }
                 }
             }
         }
 
         return parent::renderItems($items);
+    }    
+
+    protected function renderSubmenu($items)
+    {
+        $class = $this->submenuClass;
+
+        $options = $this->submenuOptions;
+
+        $options['items'] = $items;
+
+        return $class::widget($options);
     }    
 
 }
