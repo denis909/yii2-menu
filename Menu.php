@@ -19,20 +19,23 @@ class Menu extends \yii\widgets\Menu
             return $item['content'];
         }
 
-        if (!array_key_exists('template', $item) || ($item['template'] === null))
+        if (isset($item['url']))
         {
-            $options = ArrayHelper::getValue($item, 'linkOptions', []);
-
-            $options = array_merge($this->linkOptions, $options);
-
-            $linkClass = ArrayHelper::remove($item, 'linkClass');
-
-            if ($linkClass)
+            if (!array_key_exists('template', $item) || ($item['template'] === null))
             {
-                Html::addCssClass($options, $linkClass);
-            }
+                $options = ArrayHelper::getValue($item, 'linkOptions', []);
 
-            $item['template'] = Html::a('{label}', '{url}', $options);
+                $options = array_merge($this->linkOptions, $options);
+
+                $linkClass = ArrayHelper::remove($item, 'linkClass');
+
+                if ($linkClass)
+                {
+                    Html::addCssClass($options, $linkClass);
+                }
+
+                $item['template'] = Html::a('{label}', '{url}', $options);
+            }
         }
 
         $icon = ArrayHelper::remove($item, 'icon');
