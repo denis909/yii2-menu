@@ -86,7 +86,7 @@ class Menu extends \yii\widgets\Menu
 
                     if (strpos($submenuTemplate, '{id}') !== false)
                     {
-                        $id = $this->getId();
+                        $id = static::$autoIdPrefix . static::$counter++;
 
                         $submenuTemplate = str_replace('{id}', $id, $submenuTemplate);
                     
