@@ -16,6 +16,19 @@ class Menu extends \yii\widgets\Menu
 
     public $submenuClass;
 
+    protected function normalizeItems($items, &$active)
+    {
+        foreach($items as $k => $v)
+        {
+            if (array_key_exists('label', $v) && is_array($v['label']))
+            {
+                $items[$k]['label'] = call_user_func_array('Yii::t', $v['label']);
+            }
+        }
+
+        return parent::normalizeItems($items, $active);
+    }
+
     protected function renderItem($item)
     {
         if (array_key_exists('content', $item) && ($item['content'] !== null))
