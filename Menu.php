@@ -53,7 +53,7 @@ class Menu extends \yii\widgets\Menu
                     Html::addCssClass($options, $linkClass);
                 }
 
-                $item['template'] = Html::a('{label}', '{url}', $options);
+                $item['template'] = Html::a($this->labelTemplate, '{url}', $options);
             }
         }
 
