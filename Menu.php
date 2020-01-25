@@ -18,54 +18,63 @@ class Menu extends \yii\widgets\Menu
 
     public $submenuLinkTemplate;
 
-    protected $_itemInProgress = false;
+    protected $_renderItems = false;
 
-    protected function normalizeItemLabel($item)
+    protected function normalizeItems($items, &$active)
     {
-        if (array_key_exists('label', $item) && is_array($item['label']))
+        foreach($items as $k => $v)
         {
-            $item['label'] = call_user_func_array('Yii::t', $item['label']);
+            if (array_key_exists('label', $items[$k]) && is_array($items[$k]['label']))
+            {
+                $items[$k]['label'] = call_user_func_array('Yii::t', $items[$k]['label']);
+            }
         }
 
-        return $item;
+        return parent::normalizeItems($items, $active);
     }
 
-    protected function normalizeItemSubmenu($item)
+    protected function setItemSubmenuLinkTemplate($item)
     {
+        if (array_key_exists('items', $item))
+        {
+            if ($this->submenuLinkTemplate)
+            {
+                $item['template'] = ArrayHelper::getValue($item, 'template', $this->submenuLinkTemplate);
+            }            
+        }
+
+        return $item;   
+    }    
+
+    protected function setItemId($item)
+    {
+        $id = static::$autoIdPrefix . static::$counter++;
+
         if (array_key_exists('items', $item))
         {
             $item['submenuTemplate'] = ArrayHelper::getValue($item, 'submenuTemplate', $this->submenuTemplate);
 
-            if ($this->submenuLinkTemplate)
+            $item['submenuTemplate'] = str_replace('{id}', $id, $item['submenuTemplate']);
+
+            if (array_key_exists('url', $item))
             {
-                $item['template'] = ArrayHelper::getValue($item, 'template', $this->submenuLinkTemplate);
+                $item['template'] = ArrayHelper::getValue($item, 'template', $this->linkTemplate);
             }
             else
             {
-                if (isset($item['url']))
-                {
-                    $item['template'] = ArrayHelper::getValue($item, 'template', $this->linkTemplate);
-                }
-                else
-                {
-                    $item['template'] = ArrayHelper::getValue($item, 'template', $this->labelTemplate);
-                }
-            }
-        
-            if ((strpos($item['submenuTemplate'], '{id}') !== false) || (strpos($item['template'], '{id}') !== false))
-            {
-                $id = static::$autoIdPrefix . static::$counter++;
+                $item['template'] = ArrayHelper::getValue($item, 'template', $this->labelTemplate);
+            }            
+        }
 
-                $item['submenuTemplate'] = str_replace('{id}', $id, $item['submenuTemplate']);
-
-                $item['template'] = str_replace('{id}', $id, $item['template']);
-            }
+        if (array_key_exists('template', $item))
+        {
+            $item['template'] = str_replace('{id}', $id, $item['template']);
         }
 
         return $item;
     }
 
-    protected function normalizeItemIcon($item)
+    protected function setItemIcon($item)
     {
         $icon = ArrayHelper::remove($item, 'icon');
 
@@ -79,7 +88,7 @@ class Menu extends \yii\widgets\Menu
         return $item;
     }
 
-    protected function normalizeItemLink($item)
+    protected function setItemLink($item)
     {
         if (isset($item['url']))
         {
@@ -103,58 +112,62 @@ class Menu extends \yii\widgets\Menu
         return $item;
     }
 
-    protected function normalizeItems($items, &$active)
-    {
-        foreach($items as $k => $v)
-        {
-            $items[$k] = $this->normalizeItemLabel($items[$k]);
-
-            $items[$k] = $this->normalizeItemIcon($items[$k]);
-
-            $items[$k] = $this->normalizeItemLink($items[$k]);
-
-            $items[$k] = $this->normalizeItemSubmenu($items[$k]);
-        }
-
-        return parent::normalizeItems($items, $active);
-    }    
-
     protected function renderItem($item)
     {
-        $this->_itemInProgress = true;
-
         if (array_key_exists('content', $item) && ($item['content'] !== null))
         {
             return $item['content'];
         }
 
-        $return = parent::renderItem($item);
-   
-        $this->_itemInProgress = false;
+        return parent::renderItem($item);
+    }
 
-        return $return;
+    protected function beforeRenderItem($item)
+    {
+        $item = $this->setItemIcon($item);
+
+        $item = $this->setItemLink($item);
+
+        $item = $this->setItemSubmenuLinkTemplate($item);
+
+        $item = $this->setItemId($item);
+
+        return $item;
     }
 
     protected function renderItems($items)
     {
-        if ($this->submenuClass)
+        if ($this->_renderItems && $this->submenuClass)
         {
-            $this->submenuTemplate = '{items}';
-
-            if ($this->_itemInProgress)
-            {
-                $class = $this->submenuClass;
-
-                return $class::widget(array_merge(
-                    $this->submenuOptions,
-                    [
-                        'items' => $items
-                    ]
-                ));
-            }
+            return $this->renderSubmenu($items);
         }
 
-        return parent::renderItems($items);
+        foreach($items as $key => $value)
+        {
+            $items[$key] = $this->beforeRenderItem($items[$key]);
+        }
+
+        $this->_renderItems = true;
+
+        $return = parent::renderItems($items);
+
+        $this->_renderItems = false; 
+
+        return $return;
+    }
+
+    protected function renderSubmenu($items)
+    {
+        $class = $this->submenuClass;
+
+        return $class::widget(
+            array_merge(
+                $this->submenuOptions,
+                [
+                    'items' => $items
+                ]
+            )
+        );
     }
 
 }
