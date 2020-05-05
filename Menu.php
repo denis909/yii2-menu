@@ -18,6 +18,8 @@ class Menu extends \yii\widgets\Menu
 
     public $submenuLinkTemplate;
 
+    public $activeLinkCssClass;
+
     protected $_renderItems = false;
 
     protected function normalizeItems($items, &$active)
@@ -103,6 +105,13 @@ class Menu extends \yii\widgets\Menu
                 if ($linkClass)
                 {
                     Html::addCssClass($options, $linkClass);
+                }
+
+                $active = ArrayHelper::getValue($item, 'active', false);
+
+                if ($active && $this->activeLinkCssClass)
+                {
+                    Html::addCssClass($options, $this->activeLinkCssClass);
                 }
 
                 $item['template'] = Html::a('{label}', '{url}', $options);
